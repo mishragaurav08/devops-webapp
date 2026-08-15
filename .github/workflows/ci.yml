@@ -41,4 +41,42 @@ jobs:
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: aws s3 sync dist/ s3://devops-webapp-gaurav-2026 --delete
 
+      - name: Send Slack Success Notification
+        if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          COMMIT_SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          ACTION_RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            --data "$(jq -n \
+              --arg repo "${{ github.repository }}" \
+              --arg ref "${{ github.ref_name }}" \
+              --arg sha "$COMMIT_SHORT_SHA" \
+              --arg url "$ACTION_RUN_URL" \
+              '{
+                text: "✅ *AWS Deployment Successful*\n\n*Project:* \($repo)\n*Branch:* \($ref)\n*Commit:* \($sha)\n*Platform:* AWS Amplify\n*Status:* Production deployment completed successfully.\n*Workflow Run:* \($url)"
+              }')" \
+            "$SLACK_WEBHOOK_URL"
 
+      - name: Send Slack Failure Notification
+        if: failure() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+        run: |
+          COMMIT_SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          ACTION_RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          
+          curl -X POST \
+            -H "Content-Type: application/json" \
+            --data "$(jq -n \
+              --arg repo "${{ github.repository }}" \
+              --arg ref "${{ github.ref_name }}" \
+              --arg sha "$COMMIT_SHORT_SHA" \
+              --arg url "$ACTION_RUN_URL" \
+              '{
+                text: "❌ *AWS Deployment Failed*\n\n*Project:* \($repo)\n*Branch:* \($ref)\n*Commit:* \($sha)\n*Platform:* AWS Amplify\n*Status:* Deployment failed.\n*Workflow Run:* \($url)"
+              }')" \
+            "$SLACK_WEBHOOK_URL"
