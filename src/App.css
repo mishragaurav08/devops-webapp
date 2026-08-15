@@ -1,0 +1,64 @@
+/* ── Desktop Banner (Responsive) ── */
+.banner-container {
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #000;
+  overflow: hidden;
+}
+
+.responsive-banner {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.mobile-message {
+  display: none;
+}
+
+/* ── All Non-Desktop Devices (< 1024px, iPads, Tablets, Phones): Show black error message with comic font ── */
+@media screen and (max-width: 1024px) {
+  .banner-container {
+    display: none;
+  }
+
+  .mobile-message {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: 1.5rem;
+    width: 100vw;
+    height: 100vh;
+    height: 100dvh;
+    background-color: #000;
+    padding: 1.5rem;
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .oops-image {
+    width: min(75vw, 300px);
+    max-height: 45vh;
+    height: auto;
+    object-fit: contain;
+    display: block;
+  }
+
+  .mobile-message p {
+    font-family: 'Bangers', 'Luckiest Guy', cursive, sans-serif;
+    font-size: clamp(1.4rem, 5vw, 2.2rem);
+    letter-spacing: 2px;
+    color: #8beb00; /* Matching the vibrant comic green from oops.png */
+    text-align: center;
+    text-transform: uppercase;
+    margin: 0;
+    text-shadow: 2px 2px 0px #000, 3px 3px 6px rgba(0, 0, 0, 0.9);
+  }
+}
