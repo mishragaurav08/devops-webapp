@@ -48,31 +48,25 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
           if [ -z "$SLACK_WEBHOOK_URL" ]; then
-            echo "SLACK_WEBHOOK_URL is not configured"
+            echo "SLACK_WEBHOOK_URL is missing or empty in secrets."
             exit 1
           fi
 
-          COMMIT_SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          ACTION_RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          
-          SLACK_MESSAGE=$(cat <<EOF
-          ✅ AWS Deployment Successful
+          SHORT_SHA=$(echo "$GITHUB_SHA" | cut -c1-7)
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
-          Project: ${{ github.repository }}
-          Branch: ${{ github.ref_name }}
-          Commit: $COMMIT_SHORT_SHA
-          Platform: AWS
-          Status: Production deployment completed successfully.
+          PAYLOAD=$(jq -n \
+            --arg repo "$GITHUB_REPOSITORY" \
+            --arg ref "$GITHUB_REF_NAME" \
+            --arg sha "$SHORT_SHA" \
+            --arg url "$RUN_URL" \
+            '{
+              text: "✅ *AWS Deployment Successful*\n\n*Project:* \($repo)\n*Branch:* \($ref)\n*Commit:* \($sha)\n*Platform:* AWS\n*Status:* Production deployment completed successfully.\n\n*GitHub Actions Run:*\n\($url)"
+            }')
 
-          GitHub Actions Run:
-          $ACTION_RUN_URL
-          EOF
-          )
-
-          curl --fail-with-body \
-            -X POST \
+          curl -sS -X POST \
             -H "Content-Type: application/json" \
-            --data "$(printf '%s' "$SLACK_MESSAGE" | jq -Rs '{text: .}')" \
+            --data "$PAYLOAD" \
             "$SLACK_WEBHOOK_URL"
 
       - name: Send Slack Failure Notification
@@ -82,30 +76,26 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
           if [ -z "$SLACK_WEBHOOK_URL" ]; then
-            echo "SLACK_WEBHOOK_URL is not configured"
+            echo "SLACK_WEBHOOK_URL is missing or empty in secrets."
             exit 1
           fi
 
-          COMMIT_SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          ACTION_RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
-          
-          SLACK_MESSAGE=$(cat <<EOF
-          ❌ AWS Deployment Failed
+          SHORT_SHA=$(echo "$GITHUB_SHA" | cut -c1-7)
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
 
-          Project: ${{ github.repository }}
-          Branch: ${{ github.ref_name }}
-          Commit: $COMMIT_SHORT_SHA
-          Platform: AWS
-          Status: Build or deployment failed.
+          PAYLOAD=$(jq -n \
+            --arg repo "$GITHUB_REPOSITORY" \
+            --arg ref "$GITHUB_REF_NAME" \
+            --arg sha "$SHORT_SHA" \
+            --arg url "$RUN_URL" \
+            '{
+              text: "❌ *AWS Deployment Failed*\n\n*Project:* \($repo)\n*Branch:* \($ref)\n*Commit:* \($sha)\n*Platform:* AWS\n*Status:* Build or deployment failed.\n\n*GitHub Actions Run:*\n\($url)"
+            }')
 
-          GitHub Actions Run:
-          $ACTION_RUN_URL
-          EOF
-          )
-
-          curl --fail-with-body \
-            -X POST \
+          curl -sS -X POST \
             -H "Content-Type: application/json" \
-            --data "$(printf '%s' "$SLACK_MESSAGE" | jq -Rs '{text: .}')" \
+            --data "$PAYLOAD" \
             "$SLACK_WEBHOOK_URL"
+
+
 
