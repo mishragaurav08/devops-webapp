@@ -43,40 +43,69 @@ jobs:
 
       - name: Send Slack Success Notification
         if: success() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        continue-on-error: true
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "SLACK_WEBHOOK_URL is not configured"
+            exit 1
+          fi
+
           COMMIT_SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           ACTION_RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           
-          curl -X POST \
+          SLACK_MESSAGE=$(cat <<EOF
+          ✅ AWS Deployment Successful
+
+          Project: ${{ github.repository }}
+          Branch: ${{ github.ref_name }}
+          Commit: $COMMIT_SHORT_SHA
+          Platform: AWS
+          Status: Production deployment completed successfully.
+
+          GitHub Actions Run:
+          $ACTION_RUN_URL
+          EOF
+          )
+
+          curl --fail-with-body \
+            -X POST \
             -H "Content-Type: application/json" \
-            --data "$(jq -n \
-              --arg repo "${{ github.repository }}" \
-              --arg ref "${{ github.ref_name }}" \
-              --arg sha "$COMMIT_SHORT_SHA" \
-              --arg url "$ACTION_RUN_URL" \
-              '{
-                text: "✅ *AWS Deployment Successful*\n\n*Project:* \($repo)\n*Branch:* \($ref)\n*Commit:* \($sha)\n*Platform:* AWS Amplify\n*Status:* Production deployment completed successfully.\n*Workflow Run:* \($url)"
-              }')" \
+            --data "$(printf '%s' "$SLACK_MESSAGE" | jq -Rs '{text: .}')" \
             "$SLACK_WEBHOOK_URL"
 
       - name: Send Slack Failure Notification
         if: failure() && github.event_name == 'push' && github.ref == 'refs/heads/main'
+        continue-on-error: true
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
+          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+            echo "SLACK_WEBHOOK_URL is not configured"
+            exit 1
+          fi
+
           COMMIT_SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
           ACTION_RUN_URL="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           
-          curl -X POST \
+          SLACK_MESSAGE=$(cat <<EOF
+          ❌ AWS Deployment Failed
+
+          Project: ${{ github.repository }}
+          Branch: ${{ github.ref_name }}
+          Commit: $COMMIT_SHORT_SHA
+          Platform: AWS
+          Status: Build or deployment failed.
+
+          GitHub Actions Run:
+          $ACTION_RUN_URL
+          EOF
+          )
+
+          curl --fail-with-body \
+            -X POST \
             -H "Content-Type: application/json" \
-            --data "$(jq -n \
-              --arg repo "${{ github.repository }}" \
-              --arg ref "${{ github.ref_name }}" \
-              --arg sha "$COMMIT_SHORT_SHA" \
-              --arg url "$ACTION_RUN_URL" \
-              '{
-                text: "❌ *AWS Deployment Failed*\n\n*Project:* \($repo)\n*Branch:* \($ref)\n*Commit:* \($sha)\n*Platform:* AWS Amplify\n*Status:* Deployment failed.\n*Workflow Run:* \($url)"
-              }')" \
+            --data "$(printf '%s' "$SLACK_MESSAGE" | jq -Rs '{text: .}')" \
             "$SLACK_WEBHOOK_URL"
+
