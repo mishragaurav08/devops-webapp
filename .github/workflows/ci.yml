@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  id-token: write
+  contents: read
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -25,3 +29,16 @@ jobs:
 
       - name: Build project
         run: npm run build
+
+      - name: Configure AWS credentials
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::964060772510:role/GitHubActions-DevOpsWebApp
+          aws-region: us-east-1
+
+      - name: Deploy to S3
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: aws s3 sync dist/ s3://devops-webapp-gaurav-2026 --delete
+
+
