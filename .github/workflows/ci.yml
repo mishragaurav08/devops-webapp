@@ -47,8 +47,14 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
-          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+          WEBHOOK_URL=$(echo "$SLACK_WEBHOOK_URL" | tr -d '\r\n ' | xargs)
+          if [ -z "$WEBHOOK_URL" ]; then
             echo "SLACK_WEBHOOK_URL is missing or empty in secrets."
+            exit 1
+          fi
+
+          if [[ "$WEBHOOK_URL" != https://hooks.slack.com/services/* ]]; then
+            echo "SLACK_WEBHOOK_URL format does not start with https://hooks.slack.com/services/"
             exit 1
           fi
 
@@ -67,7 +73,7 @@ jobs:
           curl -sS -X POST \
             -H "Content-Type: application/json" \
             --data "$PAYLOAD" \
-            "$SLACK_WEBHOOK_URL"
+            "$WEBHOOK_URL"
 
       - name: Send Slack Failure Notification
         if: failure() && github.event_name == 'push' && github.ref == 'refs/heads/main'
@@ -75,8 +81,14 @@ jobs:
         env:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
-          if [ -z "$SLACK_WEBHOOK_URL" ]; then
+          WEBHOOK_URL=$(echo "$SLACK_WEBHOOK_URL" | tr -d '\r\n ' | xargs)
+          if [ -z "$WEBHOOK_URL" ]; then
             echo "SLACK_WEBHOOK_URL is missing or empty in secrets."
+            exit 1
+          fi
+
+          if [[ "$WEBHOOK_URL" != https://hooks.slack.com/services/* ]]; then
+            echo "SLACK_WEBHOOK_URL format does not start with https://hooks.slack.com/services/"
             exit 1
           fi
 
@@ -95,7 +107,8 @@ jobs:
           curl -sS -X POST \
             -H "Content-Type: application/json" \
             --data "$PAYLOAD" \
-            "$SLACK_WEBHOOK_URL"
+            "$WEBHOOK_URL"
+
 
 
 
